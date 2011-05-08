@@ -39,7 +39,7 @@ $mg->generate();
 
 /**
  * Synthable-PHP framework's model generation class.
- * 
+ *
  * @author jason
  */
 class ModelGen {
@@ -63,7 +63,7 @@ class ModelGen {
     private $fields = Array();
 
     /**
-     * 
+     *
      * @var unknown_type
      */
     public $baseOnly = true;
@@ -75,19 +75,19 @@ class ModelGen {
     public function generate() {
         foreach($this->xml->database->table_structure as $table) {
             $name = $this->toCamelCase($table->attributes()->name);
-            
+
             foreach($table->field as $field) {
                 $this->rawFields[] = (string) $field->attributes()->Field;
                 $this->fields[] = (string) $this->toCamelCase($field->attributes()->Field);
             }
-            
+
             if ($this->baseOnly === true) {
                 $this->generateBaseModel($name);
             } else {
                 $this->generateBaseModel($name);
                 $this->generateModel($name);
             }
-            
+
             $this->rawFields = Array();
             $this->fields = Array();
         }
@@ -95,7 +95,7 @@ class ModelGen {
 
     private function generateBaseModel($name) {
         $class = "Base" . ucfirst($name);
-        
+
         $fp = fopen($class . ".model.php", "w");
         $content = <<<EOF
 <?
@@ -109,14 +109,7 @@ EOF;
         $content .= <<<EOF
 
     public function __construct (\$id = null) {
-        parent::__construct(App::\$dbo);
-
-        if(\$id === null) {
-            \$this->setIsNew(true);
-            return true;
-        } else {
-            return \$this->load(\$id);
-        }
+        parent::__construct(\$id, App::\$dbo);
     }
 
     public function load (\$id) {
@@ -134,7 +127,7 @@ EOF;
         foreach($this->fields as $index => $field) {
             $content .= "            \$this->set" . ucfirst($field) . "(\$c->" . $this->rawFields[$index] . ");\n";
         }
-        
+
         $content .= <<<EOF
         }
 
@@ -146,7 +139,7 @@ EOF;
             null,
 
 EOF;
-        
+
         foreach($this->fields as $index => $field) {
             if ($field == "id") {
                 continue;
@@ -154,21 +147,21 @@ EOF;
             $content .= "            :" . $this->rawFields[$index] . ",\n";
         }
         $content = rtrim($content, ",\n");
-        
+
         $content .= <<<EOF
 
         )";
         \$query = \$this->db->prepare(\$sql);
 
 EOF;
-        
+
         foreach($this->fields as $index => $field) {
             if ($field == "id") {
                 continue;
             }
             $content .= "        \$query->bindParam(\":" . $this->rawFields[$index] . "\", \$this->get" . ucfirst($field) . "());\n";
         }
-        
+
         $content .= <<<EOF
         \$result = \$query->execute();
 
@@ -183,24 +176,24 @@ EOF;
         \$sql = "UPDATE \$this->table SET
 
 EOF;
-        
+
         foreach($this->fields as $index => $field) {
             $rf = $this->rawFields[$index];
             $content .= "            $rf = :$rf,\n";
         }
         $content = rtrim($content, ",\n");
-        
+
         $content .= <<<EOF
 
         WHERE id = :id";
         \$query = \$this->db->prepare(\$sql);
 
 EOF;
-        
+
         foreach($this->fields as $index => $field) {
             $content .= "        \$query->bindParam(\":" . $this->rawFields[$index] . "\", \$this->get" . ucfirst($field) . "());\n";
         }
-        
+
         $content .= <<<EOF
         \$result = \$query->execute();
 
@@ -208,7 +201,7 @@ EOF;
     }
 
 EOF;
-        
+
         foreach($this->fields as $field) {
             $content .= "    public function set" . ucfirst($field) . "(\$value) {\n";
             if ($field == "ipaddress") {
@@ -218,9 +211,9 @@ EOF;
             }
             $content .= "    }\n";
         }
-        
+
         $content .= "\n";
-        
+
         foreach($this->fields as $field) {
             $content .= "    public function get" . ucfirst($field) . "() {\n";
             if ($field == "ipaddress") {
@@ -230,25 +223,25 @@ EOF;
             }
             $content .= "    }\n";
         }
-        
+
         $content .= <<<EOF
 
 }
 EOF;
-        
+
         fwrite($fp, $content, strlen($content));
         fclose($fp);
     }
 
     /**
      * Generate the model that will be used to modify the behaviour
-     * 
+     *
      * @param string $name
      */
     public function generateModel($name) {
         $class = ucfirst($name);
         $singular = ( substr($class, - 1) == "s" ) ? substr($class, 0, - 1) : $class;
-        
+
         $fp = fopen($class . ".model.php", "w");
         $content = <<<EOF
 <?
@@ -258,12 +251,12 @@ class $class extends Base$class {
     protected \$validationRules = Array(
 
 EOF;
-        
+
         foreach($this->fields as $index => $field) {
             $content .= "        '$field' => Array(\n        ),\n";
         }
         $content = rtrim($content, ",\n");
-        
+
         $content .= <<<EOF
 
     );
@@ -286,19 +279,19 @@ EOF;
 
 class $singular extends $class {}
 EOF;
-        
+
         fwrite($fp, $content, strlen($content));
         fclose($fp);
     }
 
     /**
      * Return the value converted to camel case
-     * 
+     *
      * @param string $value
      */
     private function toCamelCase($value) {
         $words = explode("_", $value);
-        
+
         $count = count($words);
         if ($count > 1) {
             $formatted = $words[0];
@@ -308,7 +301,7 @@ EOF;
         } else {
             $formatted = $words[0];
         }
-        
+
         return $formatted;
     }
 }

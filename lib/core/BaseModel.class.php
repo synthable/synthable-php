@@ -19,9 +19,14 @@ abstract class BaseModel {
          */
         if($id === null) {
             $this->setIsNew(true);
-            return true;
         } else {
-            return $this->load($id);
+            /**
+             * If our model's load() method returns false, there was a problem
+             * and we could not load the model, so throw an exception.
+             */
+            if(!$this->load($id)) {
+                throw new ModelNotFoundExcepion($this->table, $id);
+            }
         }
     }
 
